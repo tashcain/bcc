@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout | BCC</title>
+
+    <link rel="stylesheet" href="/stylesheets/checkoutStyle.css" />
+    <link rel="stylesheet" href="/stylesheets/bootstrap.css" />
+
+    <!-- razorpay -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="bcc-logo-sec" style="padding-top: 10px">
+          <div class="bcc-logo">
+            <img
+              src="/images/newlogo.png"
+              alt="image"
+              width="210px"
+              height="90px"
+              style="float: left"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8 col-sm-12 col-md-12 col-xs-12">
+          <div class="line">
+            <hr class="plan-line" />
+          </div>
+          <div class="row">
+            <div class="col-5">
+              <div class="plan-name-price-sec">
+                <div class="plan-name">
+                  <h5>Plane Name</h5>
+                  <h6 id="planName">Name</h6>
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="duration">
+                <h5>Duration</h5>
+                <h6>1 Year</h6>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="price" style="float: right">
+                <h5>Plan Price</h5>
+                <h6>Rs. 2100</h6>
+              </div>
+            </div>
+          </div>
+          <h1 id="addListing"></h1>
+        </div>
+        <div class="col-lg-4 col-sm-12 col-md-12 col-xs-12">
+          <div class="card price-card">
+            <div class="card-header1">Your Subtotal</div>
+            <div class="card-body">
+              <div
+                class="plan-details"
+                style="display: flex; justify-content: space-between"
+              >
+                <div class="plan-total-name">
+                  <h5>Plan Price:</h5>
+                </div>
+                <div class="plan-total-price">
+                  <h5 id="price">Rs. 2100</h5>
+                </div>
+              </div>
+              <div
+                class="plan-details"
+                style="display: flex; justify-content: space-between"
+              >
+                <div class="plan-total-name">
+                  <h5>SGST (9%):</h5>
+                </div>
+                <div class="plan-total-price">
+                  <h5 id="sgstprice">Rs. 2100</h5>
+                </div>
+              </div>
+              <div
+                class="plan-details"
+                style="display: flex; justify-content: space-between"
+              >
+                <div class="plan-total-name">
+                  <h5>CGST (9%):</h5>
+                </div>
+                <div class="plan-total-price">
+                  <h5 id="cgstprice">Rs. 2100</h5>
+                </div>
+              </div>
+
+              <hr />
+              <div
+                class="total-price"
+                style="display: flex; justify-content: space-between"
+              >
+                <div class="plan-total-name">
+                  <h5>Total:</h5>
+                </div>
+                <div class="plan-total-price">
+                  <h5 id="totalprice">Rs. 2100</h5>
+                </div>
+              </div>
+              <hr />
+              <div class="pay-now-btn">
+                <button id="rzp-button">PAY NOW</button>
+              </div>
+            </div>
+          </div>
+          <div class="card price-card" style="margin-top: 12px">
+            <div class="card-header1">Have Promocode?</div>
+            <div class="card-body">
+              <form id="applyCoupon">
+                <h3 id="couponResult"></h3>
+                <div class="coupon-sec">
+                  <input type="text" name="coupon" />
+                  <button>Apply Here</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      if ("<%=plan%>" == "Starter") {
+        console.log("starter pack selected");
+        document.getElementById("planName").innerHTML = "Starter";
+        showPlans();
+        function showPlans() {
+          const plans = new XMLHttpRequest();
+          plans.open("GET", "/allPlans", true);
+          plans.send();
+          plans.onreadystatechange = function () {
+            let jsonBody = JSON.parse(plans.responseText);
+            console.log(jsonBody.Starter);
+            //starter plan
+            document.getElementById("price").innerHTML =
+              "Rs. " + jsonBody.Starter.price / 100;
+            document.getElementById("sgstprice").innerHTML =
+              "Rs. " + (jsonBody.Starter.price / 100) * 0.09;
+            document.getElementById("cgstprice").innerHTML =
+              "Rs. " + (jsonBody.Starter.price / 100) * 0.09;
+            document.getElementById("totalprice").innerHTML =
+              "Rs. " +
+              ((jsonBody.Starter.price / 100) * 0.09 +
+                (jsonBody.Starter.price / 100) * 0.09 +
+                jsonBody.Starter.price / 100);
+            document.getElementById(
+              "addListing"
+            ).innerHTML = `upto ${jsonBody.Starter.noOfListing} number of listing  `;
+          };
+        }
+
+        generateOrder();
+        function generateOrder() {
+          // fetch to post user
+
+          axios.post("/order/Starter").then((info) => {
+            console.log(info);
+
+            var options = {
+              key: "rzp_test_YALeH69IqswJJf",
+
+              name: "BCC",
+              description: "Test Transaction",
+              image: "/images/newLogo.png",
+              order_id: info.data.id,
+              callback_url: "/is-order-complete/",
+
+              theme: {
+                color: "#3399cc",
+              },
+            };
+            var rzp1 = new Razorpay(options);
+
+            document.getElementById("rzp-button").onclick = function (e) {
+              rzp1.open();
+              e.preventDefault();
+            };
+          });
+        }
+      } else if ("<%=plan%>" == "Professional") {
+        console.log("Professional pack selected");
+
+        document.getElementById("planName").innerHTML = "Professional";
+        showPlans();
+        function showPlans() {
+          const plans = new XMLHttpRequest();
+          plans.open("GET", "/allPlans", true);
+          plans.send();
+          plans.onreadystatechange = function () {
+            let jsonBody = JSON.parse(plans.responseText);
+            console.log(jsonBody.Professional);
+            //starter plan
+            document.getElementById("price").innerHTML =
+              "Rs. " + jsonBody.Professional.price / 100;
+            document.getElementById("sgstprice").innerHTML =
+              "Rs. " + (jsonBody.Professional.price / 100) * 0.09;
+            document.getElementById("cgstprice").innerHTML =
+              "Rs. " + (jsonBody.Professional.price / 100) * 0.09;
+            document.getElementById("totalprice").innerHTML =
+              "Rs. " +
+              ((jsonBody.Professional.price / 100) * 0.09 +
+                (jsonBody.Professional.price / 100) * 0.09 +
+                jsonBody.Professional.price / 100);
+            document.getElementById(
+              "addListing"
+            ).innerHTML = `upto ${jsonBody.Professional.noOfListing} number of listing  `;
+          };
+        }
+
+        generateOrder();
+        function generateOrder() {
+          // professional fee
+
+          axios.post("/order/Professional").then((info) => {
+            console.log(info);
+
+            var options = {
+              key: "rzp_test_YALeH69IqswJJf",
+
+              name: "BCC",
+              description: "Test Transaction",
+              image: "/images/newLogo.png",
+              order_id: info.data.id,
+              callback_url: "/is-order-complete/",
+
+              theme: {
+                color: "#3399cc",
+              },
+            };
+            var rzp1 = new Razorpay(options);
+
+            document.getElementById("rzp-button").onclick = function (e) {
+              rzp1.open();
+              e.preventDefault();
+            };
+          });
+        }
+      } else if ("<%=plan%>" == "Business") {
+        console.log("Business pack selected");
+        document.getElementById("planName").innerHTML = "Business";
+        showPlans();
+        function showPlans() {
+          const plans = new XMLHttpRequest();
+          plans.open("GET", "/allPlans", true);
+          plans.send();
+          plans.onreadystatechange = function () {
+            let jsonBody = JSON.parse(plans.responseText);
+            console.log(jsonBody.Business);
+            //starter plan
+            document.getElementById("price").innerHTML =
+              "Rs. " + jsonBody.Business.price / 100;
+            document.getElementById("sgstprice").innerHTML =
+              "Rs. " + (jsonBody.Business.price / 100) * 0.09;
+            document.getElementById("cgstprice").innerHTML =
+              "Rs. " + (jsonBody.Business.price / 100) * 0.09;
+            document.getElementById("totalprice").innerHTML =
+              "Rs. " +
+              ((jsonBody.Business.price / 100) * 0.09 +
+                (jsonBody.Business.price / 100) * 0.09 +
+                jsonBody.Business.price / 100);
+            document.getElementById(
+              "addListing"
+            ).innerHTML = `upto ${jsonBody.Business.noOfListing} number of listing  `;
+          };
+        }
+      }
+
+      generateOrder();
+      function generateOrder() {
+        //<!-- Buisness fee -->
+
+        axios.post("/order/Business").then((info) => {
+          console.log(info);
+
+          var options = {
+            key: "rzp_test_YALeH69IqswJJf",
+            name: "BCC",
+            description: "Test Transaction",
+            image: "/images/newLogo.png",
+            order_id: info.data.id,
+            callback_url: "/is-order-complete/",
+
+            theme: {
+              color: "#3399cc",
+            },
+          };
+          var rzp1 = new Razorpay(options);
+
+          document.getElementById("rzp-button").onclick = function (e) {
+            rzp1.open();
+            e.preventDefault();
+          };
+        });
+      }
+    </script>
+
+    <!-- coupon -->
+    <script>
+      let form = document.getElementById("applyCoupon");
+      form.addEventListener("submit", function (e) {
+        document.getElementById("discount").style.display = "block";
+
+        e.preventDefault();
+        let formData = new FormData(this);
+        fetch("/applyCoupon/<%=email%>", {
+          method: "post",
+          body: formData,
+        })
+          .then(function (response) {
+            showPlans();
+            return response.text();
+          })
+          .then(function (text) {
+            console.log("this is text ", text);
+            let couponJson = JSON.parse(text);
+            console.log("this is json ", couponJson);
+
+            if (couponJson.user) {
+              location.href = "/homeAfterLogin/" + couponJson.user;
+            } else if (couponJson.ok) {
+              document.getElementById("couponResult").innerHTML = couponJson.ok;
+            } else if (couponJson.error) {
+              document.getElementById("couponResult").innerHTML =
+                couponJson.error;
+            }
+            generateOrder();
+            showPlans();
+          });
+        // .catch((err) => {
+        //   document.getElementById("couponResult").innerHTML =
+        //     "Coupon expired or already used!";
+        // });
+      });
+    </script>
+
+    <script>
+      document.getElementById("discount").style.display = "none";
+    </script>
+  </body>
+</html>
